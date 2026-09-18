@@ -1,0 +1,77 @@
+[package]
+name = "meson"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+description = "Valence File trait and byte backends for Unified Field uploads"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+valence = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+reqwest = { workspace = true, optional = true }
+hmac = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
+hex = { workspace = true, optional = true }
+anyhow = { workspace = true, optional = true }
+boson-core = { workspace = true, optional = true }
+boson-macros = { workspace = true, optional = true }
+boson-runtime = { workspace = true, optional = true }
+boson-valence-identity = { workspace = true, optional = true }
+quark = { workspace = true, optional = true }
+photon = { workspace = true, optional = true }
+chronon-core = { workspace = true, optional = true }
+chronon-coordinator = { workspace = true, optional = true }
+chronon-coordinator-macros = { workspace = true, optional = true }
+chronon-valence-identity = { workspace = true, optional = true }
+chronon-executor = { workspace = true, optional = true }
+futures = { workspace = true, optional = true }
+log = { workspace = true, optional = true }
+
+[features]
+default = ["db-sqlite", "backend-local"]
+db-sqlite = ["valence/sqlite"]
+db-hybrid = ["valence/hybrid"]
+backend-local = []
+backend-rustfs = ["dep:reqwest", "dep:hmac", "dep:sha2", "dep:hex"]
+scanner-clamav = []
+scan-boson = [
+    "dep:anyhow",
+    "dep:boson-core",
+    "dep:boson-macros",
+    "dep:boson-runtime",
+    "dep:boson-valence-identity",
+    "dep:quark",
+]
+photon = ["dep:photon", "dep:futures"]
+scan-chronon = [
+    "dep:anyhow",
+    "dep:chronon-core",
+    "dep:chronon-coordinator",
+    "dep:chronon-coordinator-macros",
+    "dep:chronon-valence-identity",
+    "dep:chronon-executor",
+    "dep:log",
+    "scan-boson",
+]
+scan-pipeline = ["scan-boson", "photon"]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+
+[build-dependencies]
+valence-codegen = { workspace = true }

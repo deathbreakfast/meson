@@ -1,0 +1,136 @@
+[workspace]
+resolver = "2"
+members = ["meson", "meson-leptos"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Sean O'Rourke"]
+repository = "https://github.com/unified-field-dev/meson"
+homepage = "https://github.com/unified-field-dev/meson"
+documentation = "https://github.com/unified-field-dev/meson"
+
+[workspace.lints.rust]
+missing_docs = "deny"
+# leptos-lints (Dylint) names are unknown to rustc/clippy alone
+unknown_lints = "allow"
+leptos_print_stdout = "deny"
+leptos_event_target = "deny"
+leptos_event_target_value = "deny"
+leptos_unscoped_spawn = "deny"
+
+[workspace.metadata.dylint]
+libraries = [{ git = "https://github.com/leptos-rs/leptos-lints", tag = "v0.1.2" }]
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "allow"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+dbg_macro = "deny"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+return_self_not_must_use = "allow"
+wildcard_imports = "allow"
+significant_drop_tightening = "allow"
+future_not_send = "allow"
+doc_markdown = "allow"
+use_self = "allow"
+needless_pass_by_value = "allow"
+missing_const_for_fn = "allow"
+option_if_let_else = "allow"
+too_many_lines = "allow"
+map_unwrap_or = "allow"
+redundant_closure_for_method_calls = "allow"
+single_match_else = "allow"
+match_wildcard_for_single_variants = "allow"
+items_after_statements = "allow"
+redundant_clone = "allow"
+unused_async = "allow"
+used_underscore_binding = "allow"
+uninlined_format_args = "allow"
+cast_possible_truncation = "allow"
+implicit_clone = "allow"
+trait_duplication_in_bounds = "allow"
+option_option = "allow"
+unnecessary_wraps = "allow"
+unnecessary_trailing_comma = "allow"
+elidable_lifetime_names = "allow"
+trivially_copy_pass_by_ref = "allow"
+cast_sign_loss = "allow"
+cast_possible_wrap = "allow"
+ref_option = "allow"
+manual_let_else = "allow"
+cognitive_complexity = "allow"
+match_same_arms = "allow"
+cast_lossless = "allow"
+cast_precision_loss = "allow"
+unnested_or_patterns = "allow"
+too_long_first_doc_paragraph = "allow"
+assigning_clones = "allow"
+default_trait_access = "allow"
+derive_partial_eq_without_eq = "allow"
+collection_is_never_read = "allow"
+if_not_else = "allow"
+ignored_unit_patterns = "allow"
+fn_params_excessive_bools = "allow"
+semicolon_if_nothing_returned = "allow"
+struct_field_names = "allow"
+redundant_pub_crate = "allow"
+large_types_passed_by_value = "allow"
+explicit_iter_loop = "allow"
+clone_on_copy = "allow"
+enum_glob_use = "allow"
+unreadable_literal = "allow"
+redundant_closure = "allow"
+redundant_locals = "allow"
+collapsible_match = "allow"
+let_unit_value = "allow"
+unit_arg = "allow"
+similar_names = "allow"
+or_fun_call = "allow"
+too_many_arguments = "allow"
+expl_impl_clone_on_copy = "allow"
+
+[workspace.dependencies]
+valence = { package = "uf-valence", git = "https://github.com/unified-field-dev/valence", branch = "main", default-features = false, features = ["mem", "sqlite"] }
+valence-codegen = { package = "uf-valence-codegen", git = "https://github.com/unified-field-dev/valence", branch = "main" }
+async-trait = "0.1"
+thiserror = "2"
+tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt", "time"] }
+tracing = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+uuid = { version = "1", features = ["v4"] }
+anyhow = "1"
+boson-core = { git = "https://github.com/unified-field-dev/boson", branch = "main" }
+boson-macros = { git = "https://github.com/unified-field-dev/boson", branch = "main" }
+boson-runtime = { git = "https://github.com/unified-field-dev/boson", branch = "main", default-features = false }
+boson-valence-identity = { git = "https://github.com/unified-field-dev/boson-valence-identity", branch = "main" }
+quark = { package = "uf-quark", git = "https://github.com/unified-field-dev/quark", branch = "main" }
+photon = { package = "uf-photon", git = "https://github.com/unified-field-dev/photon", branch = "main", default-features = false, features = ["runtime"] }
+chronon-core = { git = "https://github.com/unified-field-dev/chronon", branch = "main" }
+chronon-coordinator = { git = "https://github.com/unified-field-dev/chronon-coordinator", branch = "main" }
+chronon-coordinator-macros = { git = "https://github.com/unified-field-dev/chronon-coordinator-macros", branch = "main" }
+chronon-valence-identity = { git = "https://github.com/unified-field-dev/chronon-valence-identity", branch = "main" }
+chronon-executor = { git = "https://github.com/unified-field-dev/chronon", branch = "main" }
+futures = { version = "0.3", default-features = false, features = ["alloc"] }
+log = "0.4"
+
+# meson-leptos
+leptos = { version = "0.8.20", default-features = false, features = ["nightly"] }
+orbital-primitives = { git = "https://github.com/unified-field-dev/orbital", branch = "main", default-features = false }
+orbital-core-components = { git = "https://github.com/unified-field-dev/orbital", branch = "main", default-features = false }
+photon-leptos = { git = "https://github.com/unified-field-dev/photon-leptos", branch = "main", default-features = false }
+higgs = { git = "https://github.com/unified-field-dev/higgs", branch = "main", default-features = false }
+axum = { version = "0.8", default-features = false, features = ["ws"] }
+

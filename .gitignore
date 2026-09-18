@@ -1,0 +1,25 @@
+/target/
+/target-*/
+**/CACHEDIR.TAG
+**/.rustc_info.json
+**/*.rs.bk
+**/node_modules/
+**/test-results/
+**/playwright-report/
+
+# Secrets — never commit
+*.env
+.env
+.env.*
+*.env.*
+*.env.age
+!*.env.example
+!.env.example
+!**/*.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa
+id_ed25519

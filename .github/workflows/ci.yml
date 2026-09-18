@@ -1,0 +1,66 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_BUILD_JOBS: "1"
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  quality-local:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Formatting check
+        run: cargo fmt --all -- --check
+      - name: Clippy (local backend)
+        run: cargo clippy -p meson --all-targets --features backend-local -- -D warnings
+      - name: Test (local backend)
+        run: cargo test -p meson --features backend-local
+      - name: cargo doc
+        run: cargo doc -p meson --no-deps --features backend-local
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+
+  quality-rustfs:
+    runs-on: ubuntu-latest
+    services:
+      rustfs:
+        image: docker.io/rustfs/rustfs:latest
+        ports:
+          - 9000:9000
+        env:
+          RUSTFS_ACCESS_KEY: mesonlabaccess
+          RUSTFS_SECRET_KEY: mesonlabsecret
+    env:
+      MESON_RUSTFS_ENDPOINT: http://127.0.0.1:9000
+      MESON_RUSTFS_BUCKET: meson-ci
+      MESON_RUSTFS_ACCESS_KEY: mesonlabaccess
+      MESON_RUSTFS_SECRET_KEY: mesonlabsecret
+      MESON_RUSTFS_REQUIRED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: Wait for RustFS
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf "http://127.0.0.1:9000" >/dev/null 2>&1 || true; then
+              # Probe with a short sleep then continue; ensure_bucket in tests creates bucket.
+              sleep 2
+              break
+            fi
+            sleep 1
+          done
+      - name: Clippy (rustfs backend)
+        run: cargo clippy -p meson --all-targets --features backend-local,backend-rustfs -- -D warnings
+      - name: Test (rustfs backend)
+        run: cargo test -p meson --features backend-local,backend-rustfs -- --test-threads=1
