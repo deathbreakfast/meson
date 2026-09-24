@@ -71,7 +71,7 @@ async fn create_with_bytes_then_get_file_bytes_happy() {
     let id = created.id().expect("id").clone();
     let bare = id.id().to_string();
     let session = as_user(&system, OWNER_USER_ID);
-    let row = E2eMesonFile::get_used(&bare, &session, valence::use_!(r"**Test:** Fixture **E2e Meson File** load for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
+    let row = E2eMesonFile::get(&bare, &session, valence::use_!(r"**Test:** Fixture **E2e Meson File** load for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
         .await
         .expect("get")
         .expect("owner can load own row");
@@ -103,7 +103,7 @@ async fn get_file_bytes_after_session_get_happy() {
     let id = created.id().expect("id").clone();
     let bare = id.id().to_string();
     let session = as_user(&system, OWNER_USER_ID);
-    let row = E2eMesonFile::get_used(&bare, &session, valence::use_!(r"**Test:** Fixture **E2e Meson File** load for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
+    let row = E2eMesonFile::get(&bare, &session, valence::use_!(r"**Test:** Fixture **E2e Meson File** load for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
         .await
         .expect("get")
         .expect("row");
@@ -136,8 +136,8 @@ async fn session_get_foreign_receipt_none_sad() {
     let peer = as_user(&system, PEER_USER_ID);
     // Fixture read policy is AUTHENTICATED (any signed-in user). Product My
     // Files IDOR uses FileQueryAll + uploaded_by — assert that path here.
-    let _peer_get = E2eMesonFile::get_used(&bare, &peer, valence::use_!(r"**Test:** Fixture **E2e Meson File** load for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only.")).await.expect("get");
-    let owner_scoped = meson::generated::FileQueryAll::query_used(&peer, valence::use_!(r"**Test:** Fixture **File Query All** list for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
+    let _peer_get = E2eMesonFile::get(&bare, &peer, valence::use_!(r"**Test:** Fixture **E2e Meson File** load for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only.")).await.expect("get");
+    let owner_scoped = meson::generated::FileQueryAll::query(&peer, valence::use_!(r"**Test:** Fixture **File Query All** list for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
         .where_uploaded_by(valence::RecordPredicate::Equals(peer_rid()))
         .await
         .expect("query");
@@ -166,7 +166,7 @@ async fn get_file_bytes_without_install_sad() {
         chrono::Utc::now(),
     )
     .expect("new");
-    let created = E2eMesonFile::create_used(row, &system, valence::use_!(r"**Test:** Fixture **E2e Meson File** save for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only.")).await.expect("create");
+    let created = E2eMesonFile::create(row, &system, valence::use_!(r"**Test:** Fixture **E2e Meson File** save for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only.")).await.expect("create");
     let err = created.get_file_bytes().await.expect_err("no install");
     assert!(
         matches!(err, FileStoreError::BlobStoreNotInstalled),
@@ -213,7 +213,7 @@ async fn get_file_bytes_missing_blob_sad() {
         chrono::Utc::now(),
     )
     .expect("new");
-    let created = E2eMesonFile::create_used(row, &system, valence::use_!(r"**Test:** Fixture **E2e Meson File** save for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only.")).await.expect("create");
+    let created = E2eMesonFile::create(row, &system, valence::use_!(r"**Test:** Fixture **E2e Meson File** save for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only.")).await.expect("create");
     let err = created.get_file_bytes().await.expect_err("missing blob");
     assert!(matches!(err, FileStoreError::NotFound), "got {err:?}");
 

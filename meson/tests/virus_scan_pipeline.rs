@@ -62,14 +62,14 @@ async fn quarantine_upload_pending_then_promote_happy() {
     ));
     let session = as_user(&system, OWNER_USER_ID);
     let bare = created.id().unwrap().id().to_string();
-    let row = E2eMesonFile::get_used(&bare, &session, valence::use_!(r"**Test:** Fixture **E2e Meson File** load for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only.")).await.unwrap().unwrap();
+    let row = E2eMesonFile::get(&bare, &session, valence::use_!(r"**Test:** Fixture **E2e Meson File** load for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only.")).await.unwrap().unwrap();
     assert!(matches!(
         row.get_file_bytes().await,
         Err(FileStoreError::NotAvailable { .. })
     ));
 
     let path = promote_to_available(row.storage_path()).await.unwrap();
-    row.get_mutable_used(&system, valence::use_!(r"**Test:** Fixture **E2e Meson File Mutable** update for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
+    row.get_mutable(&system, valence::use_!(r"**Test:** Fixture **E2e Meson File Mutable** update for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
         .set_storage_path(path)
         .unwrap()
         .set_file_status(FileFileStatus::Available)
@@ -78,7 +78,7 @@ async fn quarantine_upload_pending_then_promote_happy() {
         .await
         .unwrap();
 
-    let fresh = E2eMesonFile::get_used(&bare, &session, valence::use_!(r"**Test:** Fixture **E2e Meson File** load for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only.")).await.unwrap().unwrap();
+    let fresh = E2eMesonFile::get(&bare, &session, valence::use_!(r"**Test:** Fixture **E2e Meson File** load for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only.")).await.unwrap().unwrap();
     let bytes = fresh.get_file_bytes().await.unwrap();
     assert_eq!(bytes, payload);
     let via = get_available_file_bytes(&system, "e2e_meson_file", &bare)

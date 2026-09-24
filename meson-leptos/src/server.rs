@@ -71,7 +71,7 @@ async fn resolve_image_src(file_id: &str) -> Result<MesonImageSrc, String> {
         .valence()
         .map_err(|e| format!("auth: Failed to build Valence: {e}"))?;
 
-    let rows = FileQueryAll::query_used(&v, valence::use_!(r#"In **Meson file storage**, we **list File Query All** so the product can show or process the matching set for this workflow. Callers allowed for **Meson file storage** use the list; it is not a public dump of every field to anonymous visitors."#))
+    let rows = FileQueryAll::query(&v, valence::use_!(r#"In **Meson file storage**, we **list File Query All** so the product can show or process the matching set for this workflow. Callers allowed for **Meson file storage** use the list; it is not a public dump of every field to anonymous visitors."#))
         .where_uploaded_by(RecordPredicate::Equals(user_rid))
         .await
         .map_err(|e| format!("io: list files failed: {e}"))?;

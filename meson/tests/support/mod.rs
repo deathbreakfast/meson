@@ -108,7 +108,7 @@ pub async fn seed_file(
         Utc::now(),
     )
     .expect("E2eMesonFile::new");
-    E2eMesonFile::upsert_used(id, row, valence, valence::use_!(r"**Test:** Fixture **E2e Meson File** save for `support` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
+    E2eMesonFile::upsert(id, row, valence, valence::use_!(r"**Test:** Fixture **E2e Meson File** save for `support` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
         .await
         .expect("upsert e2e_meson_file");
 }
@@ -136,7 +136,7 @@ pub async fn seed_profile_photo(
         Utc::now(),
     )
     .expect("E2eMesonProfilePhoto::new");
-    E2eMesonProfilePhoto::upsert_used(id, row, valence, valence::use_!(r"**Test:** Fixture **E2e Meson Profile Photo** save for `support` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
+    E2eMesonProfilePhoto::upsert(id, row, valence, valence::use_!(r"**Test:** Fixture **E2e Meson Profile Photo** save for `support` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
         .await
         .expect("upsert e2e_meson_profile_photo");
 }

@@ -188,7 +188,7 @@
 //!     session_v: &valence::Valence,
 //!     bare_id: &str,
 //! ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-//!     let row = ReceiptScan::get_used(bare_id, session_v, valence::use_!(r"In **Meson file storage**, we **load Receipt Scan** so the application can decide what to do next in this workflow. The result is used by **Meson file storage** logic—not necessarily displayed on a page unless that feature’s UI shows it.")).await?.ok_or("not found")?;
+//!     let row = ReceiptScan::get(bare_id, session_v, valence::use_!(r"In **Meson file storage**, we **load Receipt Scan** so the application can decide what to do next in this workflow. The result is used by **Meson file storage** logic—not necessarily displayed on a page unless that feature’s UI shows it.")).await?.ok_or("not found")?;
 //!     let bytes = row.get_file_bytes().await?;
 //!     assert_eq!(bytes, b"PNG..");
 //!     Ok(bytes)
@@ -298,7 +298,7 @@
 //!     v: &valence::Valence,
 //!     user: RecordId,
 //! ) -> valence::Result<Vec<meson::generated::FileModel>> {
-//!     let rows = FileQueryAll::query_used(v, valence::use_!(r"In **Meson file storage**, we **list File Query All** so the product can show or process the matching set for this workflow. Callers allowed for **Meson file storage** use the list; it is not a public dump of every field to anonymous visitors."))
+//!     let rows = FileQueryAll::query(v, valence::use_!(r"In **Meson file storage**, we **list File Query All** so the product can show or process the matching set for this workflow. Callers allowed for **Meson file storage** use the list; it is not a public dump of every field to anonymous visitors."))
 //!         .where_uploaded_by(RecordPredicate::Equals(user.clone()))
 //!         .await?;
 //!     assert!(rows.iter().all(|r| r.uploaded_by() == &user));

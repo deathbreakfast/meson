@@ -227,7 +227,7 @@ pub trait FileUpload: Sized + Model + Send {
         let pending = matches!(status, FileFileStatus::PendingVirusScan);
         let status_label = status.as_str();
         let row = Self::from_stored_file(meta, put.storage_path, size_bytes, status, Utc::now())?;
-        match Self::create_used(row, valence, valence::use_!(r"In **Meson file storage**, we **save this data** so the product can continue this workflow with durable state. People and services allowed for **Meson file storage** rely on this record for that step—not as a dump of every personal field.")).await {
+        match Self::create(row, valence, valence::use_!(r"In **Meson file storage**, we **save this data** so the product can continue this workflow with durable state. People and services allowed for **Meson file storage** rely on this record for that step—not as a dump of every personal field.")).await {
             Ok(created) => {
                 tracing::info!(
                     target: "meson.file_upload",
@@ -292,7 +292,7 @@ where
     let pending = matches!(status, FileFileStatus::PendingVirusScan);
     let status_label = status.as_str();
     let row = build(meta, put.storage_path, size_bytes, status, Utc::now()).await?;
-    match M::create_used(row, valence, valence::use_!(r"When **Meson file storage** needs to persist work, we **save M** so the next step in that feature can continue with the latest values. People and services allowed for **Meson file storage** use this data for that workflow—not as a general export of unrelated personal fields.")).await {
+    match M::create(row, valence, valence::use_!(r"When **Meson file storage** needs to persist work, we **save M** so the next step in that feature can continue with the latest values. People and services allowed for **Meson file storage** use this data for that workflow—not as a general export of unrelated personal fields.")).await {
         Ok(created) => {
             tracing::info!(
                 target: "meson.file_upload",
