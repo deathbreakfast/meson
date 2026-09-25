@@ -63,22 +63,6 @@ CI runs both `quality-local` and `quality-rustfs` (service container).
 These steps assume a Unified Field workspace checkout (paths under
 `~/unified-field`). Skip them when working from a standalone meson clone.
 
-### Docs guide audit (R4)
-
-```bash
-CONTRACT=~/unified-field/uf-docs-guide-contracts/workspaces/meson
-DOC_TARGET=~/unified-field/uf-docs-data/target-meson
-cd ~/unified-field/L1-host-stack-kits/meson
-cargo doc -p meson --no-deps --features backend-local,backend-rustfs --target-dir "$DOC_TARGET"
-python3 ~/.cursor/skills/uf-high-signal-docs/guide_audit.py \
-  "$CONTRACT/doc-guide-spec.toml" \
-  --doc-root "$DOC_TARGET/doc" \
-  --freeze "$CONTRACT/doc-guide-freeze.json"
-```
-
-Omit `--allow-spec-change` unless the inventory / primary-task list changes
-(then update freeze `spec_sha256` in the same change).
-
 ### Host e2e scenarios
 
 Embedded Playwright: `meson-my-files-list-happy` +
