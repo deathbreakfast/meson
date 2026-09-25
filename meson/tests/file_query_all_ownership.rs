@@ -41,7 +41,7 @@ async fn meson_my_files_list_happy() {
     .await;
 
     let owner_v = as_user(&system, OWNER_USER_ID);
-    let rows = FileQueryAll::query_used(&owner_v, valence::use_!(r"**Test:** Fixture **File Query All** list for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
+    let rows = FileQueryAll::query(&owner_v, valence::use_!(r"**Test:** Fixture **File Query All** list for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
         .where_uploaded_by(RecordPredicate::Equals(owner_rid()))
         .await
         .expect("FileQueryAll owner");
@@ -68,7 +68,7 @@ async fn meson_my_files_idor_sad() {
     .await;
 
     let peer_v = as_user(&system, PEER_USER_ID);
-    let peer_rows = FileQueryAll::query_used(&peer_v, valence::use_!(r"**Test:** Fixture **File Query All** list for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
+    let peer_rows = FileQueryAll::query(&peer_v, valence::use_!(r"**Test:** Fixture **File Query All** list for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
         .where_uploaded_by(RecordPredicate::Equals(peer_rid()))
         .await
         .expect("FileQueryAll peer");
@@ -109,7 +109,7 @@ async fn meson_preview_image_happy() {
     store.put("shot.png", b"PNG..").await.expect("put");
 
     let owner_v = as_user(&system, OWNER_USER_ID);
-    let rows = FileQueryAll::query_used(&owner_v, valence::use_!(r"**Test:** Fixture **File Query All** list for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
+    let rows = FileQueryAll::query(&owner_v, valence::use_!(r"**Test:** Fixture **File Query All** list for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
         .where_uploaded_by(RecordPredicate::Equals(owner_rid()))
         .await
         .expect("list");
@@ -137,7 +137,7 @@ async fn meson_file_query_all_profile_photo_happy() {
     .await;
 
     let owner_v = as_user(&system, OWNER_USER_ID);
-    let rows = FileQueryAll::query_used(&owner_v, valence::use_!(r"**Test:** Fixture **File Query All** list for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
+    let rows = FileQueryAll::query(&owner_v, valence::use_!(r"**Test:** Fixture **File Query All** list for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
         .where_uploaded_by(RecordPredicate::Equals(owner_rid()))
         .await
         .expect("FileQueryAll profile photo");
@@ -163,7 +163,7 @@ async fn meson_preview_forbidden_sad() {
     .await;
 
     let peer_v = as_user(&system, PEER_USER_ID);
-    let peer_rows = FileQueryAll::query_used(&peer_v, valence::use_!(r"**Test:** Fixture **File Query All** list for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
+    let peer_rows = FileQueryAll::query(&peer_v, valence::use_!(r"**Test:** Fixture **File Query All** list for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only."))
         .where_uploaded_by(RecordPredicate::Equals(peer_rid()))
         .await
         .expect("peer list");

@@ -19,7 +19,7 @@ pub async fn meson_virus_scan_sweeper(
     use crate::generated::{FileFields, FileFileStatus, FileQueryAll};
     use valence::StringPredicate;
 
-    let rows = FileQueryAll::query_used(&valence, valence::use_!(r"In **Meson file storage**, we **list File Query All** so the product can show or process the matching set for this workflow. Callers allowed for **Meson file storage** use the list; it is not a public dump of every field to anonymous visitors."))
+    let rows = FileQueryAll::query(&valence, valence::use_!(r"In **Meson file storage**, we **list File Query All** so the product can show or process the matching set for this workflow. Callers allowed for **Meson file storage** use the list; it is not a public dump of every field to anonymous visitors."))
         .where_file_status(StringPredicate::Equals(
             FileFileStatus::PendingVirusScan.as_str().to_string(),
         ))

@@ -228,7 +228,7 @@ macro_rules! impl_file_scan_model {
             > {
                 Box::pin(async move {
                     model
-                        .get_mutable_used(valence, valence::use_!(r"In **Meson file storage**, we **update this data** so later steps see the latest values for this workflow. Callers allowed for **Meson file storage** use the updated data; this is not a public export of unrelated fields."))
+                        .get_mutable(valence, valence::use_!(r"In **Meson file storage**, we **update this data** so later steps see the latest values for this workflow. Callers allowed for **Meson file storage** use the updated data; this is not a public export of unrelated fields."))
                         .set_storage_path(storage_path)
                         .map_err(FileScanAdapterError::Valence)?
                         .set_file_status(FileFileStatus::Available)
@@ -248,7 +248,7 @@ macro_rules! impl_file_scan_model {
             > {
                 Box::pin(async move {
                     model
-                        .get_mutable_used(valence, valence::use_!(r"In **Meson file storage**, we **update this data** so later steps see the latest values for this workflow. Callers allowed for **Meson file storage** use the updated data; this is not a public export of unrelated fields."))
+                        .get_mutable(valence, valence::use_!(r"In **Meson file storage**, we **update this data** so later steps see the latest values for this workflow. Callers allowed for **Meson file storage** use the updated data; this is not a public export of unrelated fields."))
                         .set_file_status(FileFileStatus::Quarantined)
                         .map_err(FileScanAdapterError::Valence)?
                         .commit()
@@ -272,7 +272,7 @@ impl<M: FileScanModel> FileScanAdapter for ModelFileScanAdapter<M> {
         valence: &Valence,
         file_id: &str,
     ) -> Result<FileScanSnapshot, FileScanAdapterError> {
-        let row = M::get_used(file_id, valence, valence::use_!(r"In **Meson file storage**, we **load M** so the application can decide what to do next in this workflow. The result is used by **Meson file storage** logic—not necessarily displayed on a page unless that feature’s UI shows it."))
+        let row = M::get(file_id, valence, valence::use_!(r"In **Meson file storage**, we **load M** so the application can decide what to do next in this workflow. The result is used by **Meson file storage** logic—not necessarily displayed on a page unless that feature’s UI shows it."))
             .await?
             .ok_or(FileScanAdapterError::NotFound)?;
         Ok(FileScanSnapshot {
@@ -288,7 +288,7 @@ impl<M: FileScanModel> FileScanAdapter for ModelFileScanAdapter<M> {
         file_id: &str,
         storage_path: String,
     ) -> Result<(), FileScanAdapterError> {
-        let row = M::get_used(file_id, valence, valence::use_!(r"In **Meson file storage**, we **load M** so the application can decide what to do next in this workflow. The result is used by **Meson file storage** logic—not necessarily displayed on a page unless that feature’s UI shows it."))
+        let row = M::get(file_id, valence, valence::use_!(r"In **Meson file storage**, we **load M** so the application can decide what to do next in this workflow. The result is used by **Meson file storage** logic—not necessarily displayed on a page unless that feature’s UI shows it."))
             .await?
             .ok_or(FileScanAdapterError::NotFound)?;
         M::commit_available_status(row, valence, storage_path).await
@@ -299,7 +299,7 @@ impl<M: FileScanModel> FileScanAdapter for ModelFileScanAdapter<M> {
         valence: &Valence,
         file_id: &str,
     ) -> Result<(), FileScanAdapterError> {
-        let row = M::get_used(file_id, valence, valence::use_!(r"In **Meson file storage**, we **load M** so the application can decide what to do next in this workflow. The result is used by **Meson file storage** logic—not necessarily displayed on a page unless that feature’s UI shows it."))
+        let row = M::get(file_id, valence, valence::use_!(r"In **Meson file storage**, we **load M** so the application can decide what to do next in this workflow. The result is used by **Meson file storage** logic—not necessarily displayed on a page unless that feature’s UI shows it."))
             .await?
             .ok_or(FileScanAdapterError::NotFound)?;
         M::commit_quarantined_status(row, valence).await

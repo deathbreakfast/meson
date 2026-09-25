@@ -86,7 +86,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let session_v = system_v.with_actor(Actor::User {
         user_id: "alice".into(),
     });
-    let row = ReceiptScan::get_used(&bare, &session_v, valence::use_!(r"In **Meson file storage**, we **load Receipt Scan** so the application can decide what to do next in this workflow. The result is used by **Meson file storage** logic—not necessarily displayed on a page unless that feature’s UI shows it."))
+    let row = ReceiptScan::get(&bare, &session_v, valence::use_!(r"In **Meson file storage**, we **load Receipt Scan** so the application can decide what to do next in this workflow. The result is used by **Meson file storage** logic—not necessarily displayed on a page unless that feature’s UI shows it."))
         .await?
         .ok_or("not found")?;
     let loaded = row.get_file_bytes().await?;
