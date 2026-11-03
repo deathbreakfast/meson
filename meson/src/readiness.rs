@@ -161,6 +161,7 @@ mod tests {
             storage_path: "x.png".into(),
             file_status: FileFileStatus::Quarantined,
             uploaded_by: valence::RecordId::new("user", "u"),
+            uploaded_at: chrono::Utc::now(),
         };
         let err = ensure_readable_for_processing(&snap).unwrap_err();
         assert!(matches!(err, ReadinessError::NotAvailable { .. }));

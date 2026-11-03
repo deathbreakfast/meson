@@ -347,7 +347,7 @@
 //! | `backend-local` (default) | [`LocalDiskBlobStore`] |
 //! | `backend-rustfs` | [`RustFsBlobStore`] (S3 path-style / RustFS) |
 //! | `scan-pipeline` | Boson task + Photon `meson.file.updated`; Pending uploads enqueue their own scan |
-//! | `scan-chronon` | Chronon `meson_virus_scan_sweeper` |
+//! | `scan-chronon` | Chronon `meson_virus_scan_sweeper` (cron, every 5 minutes) |
 //! | `scanner-clamav` | ClamAV INSTREAM scanner (`ClamAvScanner`) |
 //!
 //! Runtime selection: [Select blob store from env](#select-blob-store-from-env)
@@ -413,7 +413,7 @@
 //! #[async_trait::async_trait]
 //! impl FileScanAdapter for StatementFileAdapter {
 //!     async fn load(&self, v: &Valence, id: &str) -> Result<FileScanSnapshot, FileScanAdapterError> {
-//!         /* get the row, copy storage_path / file_status / uploaded_by */
+//!         /* get the row, copy storage_path / file_status / uploaded_by / uploaded_at */
 //!     }
 //!     async fn commit_available(&self, v: &Valence, id: &str, path: String) -> Result<(), FileScanAdapterError> {
 //!         /* set storage_path = path and file_status = Available */
@@ -449,7 +449,7 @@
 //! again for a row that is still `PendingVirusScan`, for example one created
 //! while Boson was down. The `meson_virus_scan_sweeper` Chronon script
 //! (`scan-chronon`) does the same for Pending rows older than `max_age_secs`
-//! (default 300) when a host runs it. Enqueueing twice is
+//! (default 300). Its default job runs every five minutes. Enqueueing twice is
 //! safe: both use the key `virus_scan:{table}:{id}`, and the task skips rows that
 //! already finished.
 //!
