@@ -47,59 +47,92 @@ pub async fn meson_virus_scan(
         FileFileStatus::PendingVirusScan | FileFileStatus::VirusScanComplete => {}
     }
 
-    let quarantine = installed_quarantine_store().map_err(|e| anyhow::anyhow!("{e}"))?;
+    let started = std::time::Instant::now();
+    let result = scan_and_commit(&valence, &table, &file_id, &view).await;
+    let scan_ms = started.elapsed().as_millis();
+    let pending_ms = (chrono::Utc::now() - view.uploaded_at).num_milliseconds();
+    match result {
+        Ok(status) => {
+            let outcome = if matches!(status, FileFileStatus::Available) {
+                "clean"
+            } else {
+                "infected"
+            };
+            tracing::info!(
+                target: "meson.virus_scan",
+                operation = "meson_virus_scan",
+                outcome,
+                verdict = outcome,
+                table = %table,
+                file_id = %file_id,
+                scan_ms,
+                pending_ms,
+                "virus scan finished"
+            );
+            Ok(())
+        }
+        Err((reason_class, err)) => {
+            tracing::warn!(
+                target: "meson.virus_scan",
+                operation = "meson_virus_scan",
+                outcome = "scan_error",
+                reason_class,
+                table = %table,
+                file_id = %file_id,
+                scan_ms,
+                pending_ms,
+                error = %err,
+                "virus scan attempt failed"
+            );
+            Err(err)
+        }
+    }
+}
+
+/// Scan the quarantine bytes and commit the verdict. The error carries the stage
+/// that failed as a `reason_class`.
+async fn scan_and_commit(
+    valence: &valence::Valence,
+    table: &str,
+    file_id: &str,
+    view: &crate::file_scan_adapter::FileScanSnapshot,
+) -> Result<FileFileStatus, (&'static str, anyhow::Error)> {
+    let stage =
+        |class: &'static str| move |e: &dyn std::fmt::Display| (class, anyhow::anyhow!("{e}"));
+    let quarantine = installed_quarantine_store().map_err(|e| stage("quarantine_store")(&e))?;
     let bytes = quarantine
         .get(&view.storage_path)
         .await
-        .map_err(|e| anyhow::anyhow!("{e}"))?;
-    let scanner = crate::scan::resolve_virus_scanner();
-    let verdict = scanner
+        .map_err(|e| stage("quarantine_read")(&e))?;
+    let verdict = crate::scan::resolve_virus_scanner()
         .scan(&bytes)
         .await
-        .map_err(|e| anyhow::anyhow!("{e}"))?;
+        .map_err(|e| stage("scan")(&e))?;
 
-    match verdict {
+    let status = match verdict {
         ScanVerdict::Clean => {
             let new_path = promote_to_available(&view.storage_path)
                 .await
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
-            commit_file_available(&valence, &table, &file_id, new_path)
+                .map_err(|e| stage("promote")(&e))?;
+            commit_file_available(valence, table, file_id, new_path)
                 .await
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
-            crate::events::publish_file_updated(
-                &photon_user_key(&view.uploaded_by),
-                &file_id,
-                FileFileStatus::Available.as_str(),
-            )
-            .await;
-            tracing::info!(
-                target: "meson.virus_scan",
-                operation = "meson_virus_scan",
-                outcome = "clean",
-                verdict = "clean",
-                "virus scan promoted file to available"
-            );
+                .map_err(|e| stage("commit")(&e))?;
+            FileFileStatus::Available
         }
         ScanVerdict::Infected { .. } => {
-            commit_file_quarantined(&valence, &table, &file_id)
+            commit_file_quarantined(valence, table, file_id)
                 .await
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
-            crate::events::publish_file_updated(
-                &photon_user_key(&view.uploaded_by),
-                &file_id,
-                FileFileStatus::Quarantined.as_str(),
-            )
-            .await;
-            tracing::info!(
-                target: "meson.virus_scan",
-                operation = "meson_virus_scan",
-                outcome = "infected",
-                verdict = "infected",
-                "virus scan quarantined file"
-            );
+                .map_err(|e| stage("commit")(&e))?;
+            FileFileStatus::Quarantined
         }
-    }
-    Ok(())
+    };
+    crate::events::publish_file_updated(
+        &photon_user_key(&view.uploaded_by),
+        file_id,
+        status.as_str(),
+    )
+    .await;
+    Ok(status)
 }
 
 fn photon_user_key(rid: &valence::RecordId) -> String {

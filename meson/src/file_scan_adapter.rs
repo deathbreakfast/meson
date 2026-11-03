@@ -22,6 +22,8 @@ pub struct FileScanSnapshot {
     pub file_status: FileFileStatus,
     /// Soft owner (`user` RecordId).
     pub uploaded_by: RecordId,
+    /// When the row was uploaded; the scan task measures pending time from it.
+    pub uploaded_at: chrono::DateTime<chrono::Utc>,
 }
 
 /// Errors from file-scan adapter operations.
@@ -279,6 +281,7 @@ impl<M: FileScanModel> FileScanAdapter for ModelFileScanAdapter<M> {
             storage_path: FileFields::storage_path(&row).clone(),
             file_status: FileFields::file_status(&row).clone(),
             uploaded_by: FileFields::uploaded_by(&row).clone(),
+            uploaded_at: *FileFields::uploaded_at(&row),
         })
     }
 
