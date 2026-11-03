@@ -71,7 +71,8 @@ pub async fn meson_virus_scan(
             );
             Ok(())
         }
-        Err((reason_class, err)) => {
+        Err((stage, err)) => {
+            let reason_class = stage.as_str();
             tracing::warn!(
                 target: "meson.virus_scan",
                 operation = "meson_virus_scan",
@@ -89,40 +90,61 @@ pub async fn meson_virus_scan(
     }
 }
 
+/// The step of a scan attempt that failed; logged as `reason_class`.
+#[derive(Debug, Clone, Copy)]
+enum ScanStage {
+    QuarantineStore,
+    QuarantineRead,
+    Scan,
+    Promote,
+    Commit,
+}
+
+impl ScanStage {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::QuarantineStore => "quarantine_store",
+            Self::QuarantineRead => "quarantine_read",
+            Self::Scan => "scan",
+            Self::Promote => "promote",
+            Self::Commit => "commit",
+        }
+    }
+}
+
 /// Scan the quarantine bytes and commit the verdict. The error carries the stage
-/// that failed as a `reason_class`.
+/// that failed.
 async fn scan_and_commit(
     valence: &valence::Valence,
     table: &str,
     file_id: &str,
     view: &crate::file_scan_adapter::FileScanSnapshot,
-) -> Result<FileFileStatus, (&'static str, anyhow::Error)> {
-    let stage =
-        |class: &'static str| move |e: &dyn std::fmt::Display| (class, anyhow::anyhow!("{e}"));
-    let quarantine = installed_quarantine_store().map_err(|e| stage("quarantine_store")(&e))?;
+) -> Result<FileFileStatus, (ScanStage, anyhow::Error)> {
+    let quarantine = installed_quarantine_store()
+        .map_err(|e| (ScanStage::QuarantineStore, anyhow::anyhow!("{e}")))?;
     let bytes = quarantine
         .get(&view.storage_path)
         .await
-        .map_err(|e| stage("quarantine_read")(&e))?;
+        .map_err(|e| (ScanStage::QuarantineRead, anyhow::anyhow!("{e}")))?;
     let verdict = crate::scan::resolve_virus_scanner()
         .scan(&bytes)
         .await
-        .map_err(|e| stage("scan")(&e))?;
+        .map_err(|e| (ScanStage::Scan, anyhow::anyhow!("{e}")))?;
 
     let status = match verdict {
         ScanVerdict::Clean => {
             let new_path = promote_to_available(&view.storage_path)
                 .await
-                .map_err(|e| stage("promote")(&e))?;
+                .map_err(|e| (ScanStage::Promote, anyhow::anyhow!("{e}")))?;
             commit_file_available(valence, table, file_id, new_path)
                 .await
-                .map_err(|e| stage("commit")(&e))?;
+                .map_err(|e| (ScanStage::Commit, anyhow::anyhow!("{e}")))?;
             FileFileStatus::Available
         }
         ScanVerdict::Infected { .. } => {
             commit_file_quarantined(valence, table, file_id)
                 .await
-                .map_err(|e| stage("commit")(&e))?;
+                .map_err(|e| (ScanStage::Commit, anyhow::anyhow!("{e}")))?;
             FileFileStatus::Quarantined
         }
     };
