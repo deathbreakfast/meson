@@ -2,13 +2,13 @@
 
 use anyhow::Result;
 
-/// Re-enqueue aged pending virus scans (hosts register via Chronon default jobs).
+/// Re-enqueue aged pending virus scans. The default job runs every five minutes.
 ///
 /// Payload: optional `max_age_secs` (default 300). Scans FileQueryAll for
 /// `pending_virus_scan` and enqueues `meson_virus_scan` again.
 #[chronon_coordinator_macros::script(
     name = "meson_virus_scan_sweeper",
-    default_job(job = "meson-virus-scan-sweeper", manual)
+    default_job(job = "meson-virus-scan-sweeper", cron = "*/5 * * * *")
 )]
 pub async fn meson_virus_scan_sweeper(
     ctx: Box<dyn chronon_core::ScriptContext>,
@@ -26,10 +26,16 @@ pub async fn meson_virus_scan_sweeper(
         .await
         .map_err(|e| anyhow::anyhow!("{e}"))?;
 
-    let cutoff = chrono::Utc::now() - chrono::Duration::seconds(max_age);
+    let now = chrono::Utc::now();
+    let pending_total = rows.len();
+    let mut stale = 0u32;
+    let mut oldest_pending_secs = 0i64;
     let mut enqueued = 0u32;
     for row in rows {
-        if FileFields::uploaded_at(&row) < &cutoff {
+        let uploaded_at = *FileFields::uploaded_at(&row);
+        if is_stale(uploaded_at, now, max_age) {
+            stale += 1;
+            oldest_pending_secs = oldest_pending_secs.max((now - uploaded_at).num_seconds());
             // FileModel exposes `id` as a public field (Option<RecordId>).
             if let Some(ref rid) = row.id {
                 let table = rid.table().to_string();
@@ -59,7 +65,43 @@ pub async fn meson_virus_scan_sweeper(
         operation = "sweeper",
         outcome = "ok",
         enqueued,
+        pending_total,
+        stale,
+        oldest_pending_secs,
         "virus scan sweeper finished"
     );
     Ok(())
+}
+
+/// True when a row uploaded at `uploaded_at` has been pending longer than `max_age_secs`.
+fn is_stale(
+    uploaded_at: chrono::DateTime<chrono::Utc>,
+    now: chrono::DateTime<chrono::Utc>,
+    max_age_secs: i64,
+) -> bool {
+    uploaded_at < now - chrono::Duration::seconds(max_age_secs)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_stale;
+    use chrono::{Duration, Utc};
+
+    #[test]
+    fn fresh_row_is_not_stale() {
+        let now = Utc::now();
+        assert!(!is_stale(now - Duration::seconds(10), now, 300));
+    }
+
+    #[test]
+    fn old_row_is_stale() {
+        let now = Utc::now();
+        assert!(is_stale(now - Duration::seconds(301), now, 300));
+    }
+
+    #[test]
+    fn row_exactly_at_cutoff_is_not_stale() {
+        let now = Utc::now();
+        assert!(!is_stale(now - Duration::seconds(300), now, 300));
+    }
 }
