@@ -153,10 +153,11 @@ pub async fn seed_profile_photo(
 ///
 /// Returns `true` when the `MESON_RUSTFS_*` settings are present and the endpoint
 /// accepts a TCP connection (retried for about 10 s so a service container that is
-/// still starting is not mistaken for a missing one). When the settings are absent
-/// or the endpoint is unreachable, panics if `MESON_RUSTFS_REQUIRED=1`, unless
-/// `MESON_RUSTFS_ALLOW_UNREACHABLE=1` is set and the settings are present; otherwise
-/// logs a skip and returns `false`.
+/// still starting is not mistaken for a missing one). Panics if the settings are
+/// missing and `MESON_RUSTFS_REQUIRED=1`; logs a skip and returns `false` if they are
+/// missing otherwise. If the endpoint is unreachable, skips (returns `false`) when
+/// `MESON_RUSTFS_ALLOW_UNREACHABLE=1`; otherwise returns `true` so the real
+/// connection error surfaces in the test.
 pub fn rustfs_available(scenario: &str) -> bool {
     let var = |k: &str| std::env::var(k).ok();
     let required = var("MESON_RUSTFS_REQUIRED").as_deref() == Some("1");
