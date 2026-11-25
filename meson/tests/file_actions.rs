@@ -441,17 +441,16 @@ fn meson_app_names_registered_next_to_schema() {
     assert_eq!(app_name_or_table("unknown_files"), "unknown_files");
 }
 
+/// Typed-table sync emits `CREATE INDEX IF NOT EXISTS` for every declared `indexed`
+/// field. SQLite's live layout inspection doesn't report index flags, so this checks the
+/// declared schema each File table syncs from.
 #[tokio::test]
 async fn meson_file_trait_fields_are_indexed_on_every_table() {
-    let system = setup_valence().await;
+    let _system = setup_valence().await;
     for table in ["e2e_meson_file", "e2e_meson_profile_photo", OWNED] {
-        let layout = system
-            .backend_for_table(table)
-            .unwrap()
-            .inspect_typed_layout(table)
-            .await
-            .unwrap()
-            .expect("sqlite reports a layout");
+        let schema = valence::SchemaRegistry::global()
+            .get_full_schema(table)
+            .unwrap_or_else(|| panic!("{table} is registered"));
         for field in [
             "uploaded_by",
             "uploaded_at",
@@ -460,7 +459,7 @@ async fn meson_file_trait_fields_are_indexed_on_every_table() {
             "mime_type",
             "file_name",
         ] {
-            let f = layout
+            let f = schema
                 .fields
                 .iter()
                 .find(|f| f.name == field)
