@@ -10,7 +10,10 @@ use crate::status::is_pending_status;
 /// File-id image that syncs until Available, then serves `/api/files/{id}`.
 ///
 /// Pending → Orbital Skeleton sized to `width`/`height`. Available → Orbital
-/// Image. Quarantined / unauthorized → empty framed space (no `src`).
+/// Image. Quarantined → empty framed space (no `src`,
+/// `data-testid="meson-img-unavailable"`). A failed load (not found, not signed in,
+/// storage error) draws its own frame (`data-testid="meson-img-error"`) and calls
+/// `on_error` with the server's error message, so the caller can explain it.
 #[component]
 pub fn MesonImg(
     /// Valence File id (`table:uuid`) or bare UUID.
@@ -31,6 +34,9 @@ pub fn MesonImg(
     /// Orbital object-fit preset.
     #[prop(optional)]
     fit: Option<ImageFit>,
+    /// Called with the error message when the image can't be loaded.
+    #[prop(optional, into)]
+    on_error: Option<Callback<String>>,
 ) -> impl IntoView {
     let file_id_signal = RwSignal::new(file_id);
     let alt_signal = StoredValue::new(alt);
@@ -50,6 +56,14 @@ pub fn MesonImg(
             get_meson_image_src(fid).await
         },
     );
+
+    if let Some(on_error) = on_error {
+        Effect::new(move |_| {
+            if let Some(Err(e)) = src_res.get() {
+                on_error.run(e.to_string());
+            }
+        });
+    }
 
     view! {
         <span data-testid="meson-img">
@@ -83,17 +97,27 @@ pub fn MesonImg(
                                 .with_fit(fit_signal.get_value());
                             view! { <Image config=config /> }.into_any()
                         } else {
-                            empty_frame(
-                                width_signal.get_value(),
-                                height_signal.get_value(),
-                            )
+                            view! {
+                                <span data-testid="meson-img-unavailable">
+                                    {empty_frame(
+                                        width_signal.get_value(),
+                                        height_signal.get_value(),
+                                        String::new(),
+                                    )}
+                                </span>
+                            }
                             .into_any()
                         }
                     }
-                    Some(Err(_)) => empty_frame(
-                        width_signal.get_value(),
-                        height_signal.get_value(),
-                    )
+                    Some(Err(_)) => view! {
+                        <span data-testid="meson-img-error" role="alert">
+                            {empty_frame(
+                                width_signal.get_value(),
+                                height_signal.get_value(),
+                                "Image failed to load".to_string(),
+                            )}
+                        </span>
+                    }
                     .into_any(),
                     None => pending_skeleton(
                         width_signal.get_value(),
@@ -129,10 +153,10 @@ fn pending_skeleton(
     }
 }
 
-fn empty_frame(width: Option<String>, height: Option<String>) -> impl IntoView {
+fn empty_frame(width: Option<String>, height: Option<String>, alt: String) -> impl IntoView {
     // Sized empty Image frame (no src) — preserves layout without leaking bytes.
     let mut config = ImageConfig::default();
-    config.alt = Some(String::new());
+    config.alt = Some(alt);
     config.width = width;
     config.height = height;
     view! { <Image config=config /> }
