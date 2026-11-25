@@ -23,6 +23,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
+zip = { workspace = true }
 reqwest = { workspace = true, optional = true }
 hmac = { workspace = true, optional = true }
 sha2 = { workspace = true, optional = true }
@@ -77,6 +78,10 @@ tracing-subscriber = { workspace = true }
 
 [[test]]
 name = "scan_kickoff"
+required-features = ["backend-local", "scan-pipeline"]
+
+[[test]]
+name = "zip_background"
 required-features = ["backend-local", "scan-pipeline"]
 
 [[test]]

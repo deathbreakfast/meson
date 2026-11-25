@@ -2452,6 +2452,7 @@ dependencies = [
  "uf-valence",
  "uf-valence-codegen",
  "uuid",
+ "zip",
 ]
 
 [[package]]
