@@ -44,6 +44,18 @@
 //! - **File readiness** — [`wait_until_available`] / [`get_available_file_bytes`]
 //!   gate processors on Available (never quarantine bytes).
 //!   [Get started](#wait-until-file-available)
+//! - **File lookup** — Load one of the owner's files by its full id with
+//!   [`get_by_id`] (reads only that id's table), and offer type-ahead names with
+//!   [`suggest_names`]. [Get started](#look-up-one-file)
+//! - **File apps** — Each File table names its app ("Finance") and can refuse a
+//!   delete through [`FileApp`] and [`register_file_app!`], written next to the
+//!   schema. Read names with [`display_app_name`]. [Get started](#register-a-file-app)
+//! - **File delete** — [`delete_file`] / [`delete_files`] remove the row and its
+//!   bytes under the caller's actor, after the app's [`FileApp::before_delete`].
+//!   [Get started](#delete-files)
+//! - **Zip download** — [`zip_files`] zips the owner's Available files and skips
+//!   quarantined and scanning ones; large selections go to a Boson task.
+//!   [Get started](#zip-files)
 //!
 //! # Opt in File trait
 //!
@@ -486,6 +498,94 @@
 //! On timeout you get [`ReadinessError::Timeout`]. Prefer Photon
 //! `meson.file.updated` for UI refetch; this wait helper is for worker gates.
 //!
+//! # Look up one file
+//!
+//! [`get_by_id`] loads one of the owner's files from the table named in its
+//! `RecordId`, with Valence read privacy applied. A missing id, someone else's id
+//! and a non-File table all give `None`; answer them the same way. Bind `owner` to
+//! the session user. [`suggest_names`] returns up to [`MAX_NAME_SUGGESTIONS`]
+//! distinct names that start with a prefix, for a search box.
+//!
+//! ```rust,ignore
+//! use meson::{get_by_id, suggest_names};
+//! use valence::RecordId;
+//!
+//! async fn open(v: &valence::Valence, me: RecordId, want: RecordId) -> valence::Result<()> {
+//!     let row = get_by_id(v, valence::use_!(r"When someone opens a file from **My Files**, Meson loads **that one file's details** (name, type, size, scan status) so its page can show them and offer download or delete."), &me, &want).await?;
+//!     assert!(row.is_some());
+//!     let names = suggest_names(v, valence::use_!(r"While someone types in the **My Files** search box, Meson reads the **names of their own files** that start with what they typed and shows up to ten as suggestions."), &me, "rec", 10).await?;
+//!     assert!(names.len() <= 10);
+//!     Ok(())
+//! }
+//! ```
+//!
+//! Paged lists, filter counts and storage totals wait on Valence features
+//! (greater-than on strings, privacy-aware counts and sums); until then list with
+//! [`generated::FileQueryAll`].
+//!
+//! # Register a File app
+//!
+//! Implement [`FileApp`] on the codegen model next to its schema and register it
+//! once. My Files shows `APP_NAME` instead of the table name, and [`delete_file`]
+//! calls `before_delete` before removing anything.
+//!
+//! ```rust,ignore
+//! impl meson::FileApp for FinanceReceiptFile {
+//!     const APP_NAME: &'static str = "Finance";
+//! }
+//! meson::register_file_app!(FinanceReceiptFile);
+//!
+//! assert_eq!(meson::display_app_name("finance_receipt_file"), Some("Finance"));
+//! assert_eq!(meson::app_name_or_table("other_table"), "other_table");
+//! ```
+//!
+//! # Delete files
+//!
+//! [`delete_file`] deletes the row with the caller's own actor, so the table's
+//! `delete:` policy must allow the owner. Add [`UPLOADED_BY_OWNER`] to it. Then the
+//! bytes are removed from the available or quarantine store. A refusal from the
+//! app or a privacy denial leaves the row and its bytes.
+//!
+//! ```rust,ignore
+//! use meson::{delete_file, DeleteOutcome};
+//!
+//! async fn remove(v: &valence::Valence, me: valence::RecordId, id: valence::RecordId) {
+//!     match delete_file(v, &me, &id).await {
+//!         Ok(DeleteOutcome::Deleted { .. }) => {}
+//!         Ok(DeleteOutcome::Refused(r)) => println!("kept: {}", r.reason),
+//!         Ok(DeleteOutcome::NotFound) => println!("not found"),
+//!         Err(e) => println!("failed: {e}"),
+//!     }
+//! }
+//! ```
+//!
+//! [`delete_files`] returns one result per id, in order.
+//!
+//! # Zip files
+//!
+//! [`zip_files`] returns the zip's bytes for up to [`ZIP_INLINE_MAX_FILES`] files
+//! and [`ZIP_INLINE_MAX_BYTES`] bytes. Larger selections are built by the
+//! `meson_zip_files` Boson task (feature `scan-boson`), running as the same actor,
+//! into the available store under [`zip_object_key`]; it publishes Photon
+//! `meson.zip.ready` (feature `photon`) with an expiry [`ZIP_LINK_TTL_HOURS`] hours
+//! out. Serving that object to its owner, and removing it after it expires, is the
+//! app's job.
+//!
+//! ```rust,ignore
+//! use meson::{zip_files, ZipOutput};
+//!
+//! async fn download(v: &valence::Valence, me: valence::RecordId, ids: Vec<valence::RecordId>) {
+//!     let result = zip_files(v, &me, &ids).await.expect("zip");
+//!     match result.output {
+//!         ZipOutput::Bytes(bytes) => assert!(!bytes.is_empty()),
+//!         ZipOutput::Queued { task_id } => println!("building {task_id}"),
+//!     }
+//!     for (id, reason) in result.skipped {
+//!         println!("left out {id}: {reason:?}");
+//!     }
+//! }
+//! ```
+//!
 //! # Examples
 //!
 //! ```bash
@@ -497,6 +597,7 @@
 
 pub mod backend;
 mod blob_install;
+pub mod delete;
 pub mod embedded_surreal;
 pub mod file_io;
 pub mod file_scan_adapter;
@@ -504,10 +605,12 @@ pub mod generated;
 pub mod ownership;
 pub mod preview;
 pub mod promote;
+pub mod query_page;
 pub mod readiness;
 pub mod scan;
 mod scan_kickoff;
 pub mod virus_scan_config;
+pub mod zip;
 
 #[cfg(feature = "photon")]
 pub mod events;
@@ -519,11 +622,15 @@ pub mod enqueue;
 #[cfg(feature = "scan-boson")]
 pub mod tasks;
 
-#[cfg(feature = "scan-chronon")]
+#[cfg(feature = "scan-boson")]
 pub mod jobs;
 
 mod schemas;
 
+pub use crate::zip::{
+    zip_files, zip_object_key, SkipReason, ZipError, ZipOutput, ZipResult, ZIP_INLINE_MAX_BYTES,
+    ZIP_INLINE_MAX_FILES, ZIP_LINK_TTL_HOURS,
+};
 #[cfg(feature = "backend-local")]
 pub use backend::LocalDiskBlobStore;
 pub use backend::{
@@ -536,6 +643,10 @@ pub use blob_install::{
     clear_blob_store_for_test, clear_blob_stores_for_test, clear_quarantine_store_for_test,
     install_blob_store, install_quarantine_store, installed_blob_store, installed_quarantine_store,
 };
+pub use delete::{
+    app_name_or_table, delete_file, delete_files, display_app_name, DeleteError, DeleteOutcome,
+    DeleteRefusal, FileApp, UPLOADED_BY_OWNER,
+};
 pub use file_io::{
     create_with_put, get_installed_object, put_new_object, FileBytes, FileCreateMeta, FileUpload,
     FileUploadError, PutObjectResult,
@@ -546,10 +657,13 @@ pub use file_scan_adapter::{
     register_file_scan_adapter, FileScanAdapter, FileScanAdapterError, FileScanSnapshot,
 };
 /// Teaching / inventory fixtures (`ReceiptScan`, `E2eMeson*`); product schemas live in consuming crates.
-pub use generated::{E2eMesonFile, E2eMesonProfilePhoto, FileFileStatus, ReceiptScan};
+pub use generated::{
+    E2eMesonFile, E2eMesonOwnedFile, E2eMesonProfilePhoto, FileFileStatus, ReceiptScan,
+};
 pub use ownership::{find_file_in_owned_rows, is_uploaded_by};
 pub use preview::{preview_kind, PreviewKind};
 pub use promote::{promote_to_available, PromoteError};
+pub use query_page::{file_tables, get_by_id, suggest_names, MAX_NAME_SUGGESTIONS};
 pub use readiness::{
     ensure_readable_for_processing, get_available_file_bytes, wait_until_available,
     wait_until_available_object, ReadinessError,
@@ -563,6 +677,14 @@ pub use scan::{
 pub use scan::{parse_clamd_response, ClamAvConfigError, ClamAvScanner};
 pub use virus_scan_config::virus_scan_enabled;
 
+/// Paths [`register_file_app!`] expands to. Not part of the public API.
+#[doc(hidden)]
+pub mod __private {
+    pub use crate::delete::FileAppEntry;
+    pub use valence::inventory;
+    pub use valence::Model;
+}
+
 #[cfg(feature = "scan-boson")]
 pub use enqueue::{enqueue_virus_scan, EnqueueScanError};
 
@@ -573,6 +695,7 @@ pub fn touch_schema_inventory() {
         std::any::type_name::<ReceiptScan>(),
         std::any::type_name::<E2eMesonFile>(),
         std::any::type_name::<E2eMesonProfilePhoto>(),
+        std::any::type_name::<E2eMesonOwnedFile>(),
         std::any::type_name::<generated::E2eMesonSoftUser>(),
     );
     let _ = valence::TraitRegistry::global();

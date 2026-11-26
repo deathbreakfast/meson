@@ -111,6 +111,7 @@ hmac = "0.12"
 sha2 = "0.10"
 hex = "0.4"
 uuid = { version = "1", features = ["v4"] }
+zip = { version = "9.4", default-features = false, features = ["deflate"] }
 anyhow = "1"
 boson-core = { git = "https://github.com/unified-field-dev/boson", branch = "main" }
 boson-macros = { git = "https://github.com/unified-field-dev/boson", branch = "main" }

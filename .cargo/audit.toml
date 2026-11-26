@@ -4,4 +4,9 @@
 # sqlx-mysql (via valence's sqlx); `cargo tree` shows it is never compiled
 # into meson. Same ignore as valence. See BACKLOG
 # ammonia_rustsec_2021_0157_0158_01 and published_crates_advisory_gate_01.
-ignore = ["RUSTSEC-2023-0071"]
+ignore = [
+    "RUSTSEC-2023-0071",
+    # libsqlite3-sys 0.30 via sqlx-sqlite; temporary until the fleet sqlx bump
+    # moves it to >=0.39 (security:RUSTSEC-2026-0459).
+    "RUSTSEC-2026-0459",
+]

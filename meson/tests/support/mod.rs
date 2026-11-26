@@ -206,3 +206,31 @@ pub fn rustfs_available(scenario: &str) -> bool {
     // Unreachable and not allowed: run on so the real connection error surfaces.
     true
 }
+
+/// Seed an owner-deletable File fixture row with `status`; returns its full id.
+pub async fn seed_owned_file(
+    valence: &Valence,
+    id: &str,
+    uploader: RecordId,
+    file_name: &str,
+    storage_path: &str,
+    size_bytes: i64,
+    status: FileFileStatus,
+) -> RecordId {
+    let extension = file_name.rsplit('.').next().unwrap_or("bin").to_string();
+    let row = meson::E2eMesonOwnedFile::new(
+        file_name.to_string(),
+        extension,
+        "application/octet-stream".to_string(),
+        size_bytes,
+        storage_path.to_string(),
+        status,
+        uploader,
+        Utc::now(),
+    )
+    .expect("E2eMesonOwnedFile::new");
+    meson::E2eMesonOwnedFile::upsert(id, row, valence, valence::use_!(r"**Test:** Fixture **E2e Meson Owned File** save for `support` so the suite can arrange delete, lookup and zip cases."))
+        .await
+        .expect("upsert e2e_meson_owned_file");
+    RecordId::new("e2e_meson_owned_file", id)
+}
